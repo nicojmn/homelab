@@ -1,0 +1,139 @@
+services:
+  traefik:
+    image: "traefik:v3.1"
+    container_name: "traefik"
+    command:
+      # - "--log.level=DEBUG"
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    environment:
+      - TZ=Europe/Brussels
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.auth.basicauth.users=${TFK_USER}"
+      - "traefik.http.routers.api.rule=Host(`traefik.${DOMAIN}`)" # Replace with your dashboard domain
+      - "traefik.http.routers.api.entrypoints=websecure" # Use HTTPS for the dashboard
+      #- "traefik.http.routers.api.entrypoints=web" # debug
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.tls.certresolver=myresolver" # Link to the ACME resolver
+      - "traefik.http.routers.api.middlewares=auth" # Apply basic auth middleware
+
+  focalboard:
+    image: mattermost/focalboard:edge
+    container_name: "focalboard"
+    restart: unless-stopped
+    depends_on: 
+        - focalboard-db
+    expose:
+      - 8000
+    environment:
+      - VIRTUAL_HOST=localhost
+      - VIRTUAL_PORT=8000
+      - VIRTUAL_PROTO=http
+      - TZ=Europe/Brussels
+    volumes:
+      - ${DATA_DIR}/focalboard/config.json:/opt/focalboard/config.json 
+      - ${DATA_DIR}/fbdata:/opt/focalboard/data:rw 
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.boards.rule=Host(`boards.${DOMAIN}`)"
+      - "traefik.http.routers.boards.entrypoints=websecure"
+      - "traefik.http.routers.boards.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.auth.basicauth.users=${TFK_USER}"
+      #- "traefik.http.routers.boards.middlewares=auth" # Apply basic auth middleware
+  focalboard-db:
+    image: postgres:16
+    container_name: "focalboard-db"
+    restart: always
+    environment:
+      - POSTGRES_DB=${FB_DB_NAME}
+      - POSTGRES_USER=${FB_DB_USER}
+      - POSTGRES_PASSWORD=${FB_DB_PASS}
+    volumes:
+      - ${DATA_DIR}/pgdata:/var/lib/postgresql/data
+    labels:
+      - "traefik.enable=false"
+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    volumes:
+    - ${DATA_DIR}/vw-data:/data
+    environment:
+    #- DATABASE_URL=${VAULT_DB}
+    - SIGNUPS_ALLOWED=false
+    - DOMAIN=https://vault.nicojmn.tech
+    - ADMIN_TOKEN=${VW_TOKEN}
+    - TZ=Europe/Brussels
+    - LOG_FILE=/data/logs.log
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN}`)"
+    - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+    - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
+    - "traefik.http.routers.vaultwarden.tls=true"
+    - "traefik.http.routers.vaultwarden.tls.certresolver=myresolver"
+  fail2ban:
+    image: lscr.io/linuxserver/fail2ban:latest
+    container_name: fail2ban
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TZ=Europe/Brussels
+      - PUID=1000
+      - PGID=1000
+      - F2B_DB_PURGE_AGE=14d
+    volumes:
+      - ${DATA_DIR}/fail2ban/config:/config
+      - ${DATA_DIR}/vw-data:/remotelogs/vaultwarden:ro
+      - ${DATA_DIR}/mealie-data/mealie.log:/remotelogs/mealie.log:ro  
+      - ${LOGS_DIR}/var/log:/var/log:ro
+    restart: unless-stopped
+
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v1.12.0 # 
+    container_name: mealie
+    restart: unless-stopped
+    ports:
+        - "9925:9000" # 
+    deploy:
+      resources:
+        limits:
+          memory: 1000M # 
+    volumes:
+      - ${DATA_DIR}/mealie-data:/app/data/
+    environment:
+      # Set Backend ENV Variables Here
+      ALLOW_SIGNUP: "false"
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Brussels
+      MAX_WORKERS: 1
+      WEB_CONCURRENCY: 1
+      BASE_URL: https://mealie.${DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mealie.rule=Host(`mealie.${DOMAIN}`)"
+      - "traefik.http.routers.mealie.entrypoints=websecure"
+      - "traefik.http.routers.mealie.tls=true"
+      - "traefik.http.routers.mealie.tls.certresolver=myresolver"
+
+volumes:
+  data:
+  vw-data:
+  focalboard:
+  mealie-data:
