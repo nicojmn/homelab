@@ -29,6 +29,8 @@ services:
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.routers.api.tls.certresolver=myresolver" # Link to the ACME resolver
       - "traefik.http.routers.api.middlewares=auth" # Apply basic auth middleware
+    networks:
+      - external
 
   focalboard:
     image: mattermost/focalboard:edge
@@ -53,6 +55,9 @@ services:
       - "traefik.http.routers.boards.tls.certresolver=myresolver"
       - "traefik.http.middlewares.auth.basicauth.users=${TFK_USER}"
       #- "traefik.http.routers.boards.middlewares=auth" # Apply basic auth middleware
+    networks:
+      - external
+      
   focalboard-db:
     image: postgres:16
     container_name: "focalboard-db"
@@ -86,6 +91,9 @@ services:
     - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
     - "traefik.http.routers.vaultwarden.tls=true"
     - "traefik.http.routers.vaultwarden.tls.certresolver=myresolver"
+    networks:
+      - external
+      
   fail2ban:
     image: lscr.io/linuxserver/fail2ban:latest
     container_name: fail2ban
@@ -131,6 +139,8 @@ services:
       - "traefik.http.routers.mealie.entrypoints=websecure"
       - "traefik.http.routers.mealie.tls=true"
       - "traefik.http.routers.mealie.tls.certresolver=myresolver"
+    networks:
+      - external
 
   glance:
     image: glanceapp/glance
@@ -147,9 +157,16 @@ services:
       - "traefik.http.routers.glance.tls=true"
       - "traefik.http.routers.glance.tls.certresolver=myresolver"
       - "traefik.http.services.glance.loadbalancer.server.port=8080"
+    networks:
+      - external
 
 volumes:
   data:
   vw-data:
   focalboard:
   mealie-data:
+
+networks:
+  external:
+    external: true
+  internal:
