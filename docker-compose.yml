@@ -160,6 +160,27 @@ services:
     networks:
       - external
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    user: "0"
+    volumes:
+      - ${DATA_DIR}/grafana/data:/var/lib/grafana
+      - ${DATA_DIR}/grafana/conf:/etc/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    networks:
+      - external
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+             
 volumes:
   data:
   vw-data:
