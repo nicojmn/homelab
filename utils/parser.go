@@ -31,8 +31,10 @@ type Service struct {
 	Restart       string   `yaml:"restart,omitempty"`
 	CapAdd        []string `yaml:"cap_add,omitempty"`
 	User          string   `yaml:"user,omitempty"`
-	DependsOn    []string `yaml:"depends_on,omitempty"`
+	DependsOn     []string `yaml:"depends_on,omitempty"`
 	Expose        []string `yaml:"expose,omitempty"`
+	Pid           string   `yaml:"pid,omitempty"`
+	Deploy        any      `yaml:"deploy,omitempty"`
 }
 
 func sanitizeFileName(name string) string {
@@ -77,7 +79,7 @@ func main() {
 	logger.Info().Msg("Parsed docker-compose.yml file successfully")
 
 	for _, service := range compose.Services {
-		
+
 		composeFile := ComposeFile{
 			Services: map[string]Service{
 				service.ContainerName: service,
