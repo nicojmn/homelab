@@ -1,0 +1,25 @@
+services:
+    focalboard:
+        image: mattermost/focalboard:edge
+        container_name: focalboard
+        environment:
+            - VIRTUAL_HOST=localhost
+            - VIRTUAL_PORT=8000
+            - VIRTUAL_PROTO=http
+            - TZ=Europe/Brussels
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.boards.rule=Host(`boards.${DOMAIN}`)
+            - traefik.http.routers.boards.entrypoints=websecure
+            - traefik.http.routers.boards.tls.certresolver=myresolver
+            - traefik.http.middlewares.auth.basicauth.users=${TFK_USER}
+        volumes:
+            - ${DATA_DIR}/focalboard/config.json:/opt/focalboard/config.json
+            - ${DATA_DIR}/fbdata:/opt/focalboard/data:rw
+        networks:
+            - external
+        restart: unless-stopped
+        depends_on:
+            - focalboard-db
+        expose:
+            - "8000"

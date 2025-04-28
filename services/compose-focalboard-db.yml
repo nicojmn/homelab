@@ -1,0 +1,16 @@
+services:
+    focalboard-db:
+        image: postgres:16
+        container_name: focalboard-db
+        environment:
+            - POSTGRES_DB=${FB_DB_NAME}
+            - POSTGRES_USER=${FB_DB_USER}
+            - POSTGRES_PASSWORD=${FB_DB_PASS}
+        labels:
+            - traefik.enable=false
+        volumes:
+            - ${DATA_DIR}/pgdata:/var/lib/postgresql/data
+        networks:
+            - external
+            - internal
+        restart: always

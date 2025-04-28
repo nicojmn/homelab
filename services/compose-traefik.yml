@@ -1,0 +1,32 @@
+services:
+    traefik:
+        image: traefik:v3.1
+        container_name: traefik
+        command:
+            - --api.insecure=true
+            - --api.dashboard=true
+            - --providers.docker=true
+            - --providers.docker.exposedbydefault=false
+            - --entryPoints.websecure.address=:443
+            - --certificatesresolvers.myresolver.acme.tlschallenge=true
+            - --certificatesresolvers.myresolver.acme.email=${EMAIL}
+            - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+            - metrics.prometheus=true
+        environment:
+            - TZ=Europe/Brussels
+        ports:
+            - 443:443
+            - 8080:8080
+        labels:
+            - traefik.enable=true
+            - traefik.http.middlewares.auth.basicauth.users=${TFK_USER}
+            - traefik.http.routers.api.rule=Host(`traefik.${DOMAIN}`)
+            - traefik.http.routers.api.entrypoints=websecure
+            - traefik.http.routers.api.tls=true
+            - traefik.http.routers.api.tls.certresolver=myresolver
+            - traefik.http.routers.api.middlewares=auth
+        volumes:
+            - ./letsencrypt:/letsencrypt
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - external

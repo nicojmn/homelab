@@ -1,0 +1,19 @@
+services:
+    prometheus:
+        image: prom/prometheus
+        container_name: prometheus
+        command:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.size=256MB
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)
+            - traefik.http.routers.prometheus.service=prometheus
+            - traefik.http.services.prometheus.loadbalancer.server.port=9090
+        volumes:
+            - ${DATA_DIR}/prometheus/:/etc/prometheus
+        networks:
+            - external
+            - internal
+        restart: unless-stopped

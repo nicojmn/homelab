@@ -1,0 +1,18 @@
+services:
+    fail2ban:
+        image: lscr.io/linuxserver/fail2ban:latest
+        container_name: fail2ban
+        environment:
+            - TZ=Europe/Brussels
+            - PUID=1000
+            - PGID=1000
+            - F2B_DB_PURGE_AGE=14d
+        volumes:
+            - ${DATA_DIR}/fail2ban/config:/config
+            - ${DATA_DIR}/vw-data:/remotelogs/vaultwarden:ro
+            - ${DATA_DIR}/mealie-data/mealie.log:/remotelogs/mealie.log:ro
+            - ${LOGS_DIR}/var/log:/var/log:ro
+        restart: unless-stopped
+        cap_add:
+            - NET_ADMIN
+            - NET_RAW

@@ -1,0 +1,10 @@
+services:
+    node_exporter:
+        image: quay.io/prometheus/node-exporter:latest
+        container_name: node_exporter
+        command:
+            - --path.rootfs=/host
+        volumes:
+            - /:/host:ro,rslave
+        restart: unless-stopped
+        pid: host

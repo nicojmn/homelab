@@ -1,0 +1,29 @@
+services:
+    mealie:
+        image: ghcr.io/mealie-recipes/mealie:v1.12.0
+        container_name: mealie
+        environment:
+            ALLOW_SIGNUP: "false"
+            BASE_URL: https://mealie.${DOMAIN}
+            MAX_WORKERS: 1
+            PGID: 1000
+            PUID: 1000
+            TZ: Europe/Brussels
+            WEB_CONCURRENCY: 1
+        ports:
+            - 9925:9000
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.mealie.rule=Host(`mealie.${DOMAIN}`)
+            - traefik.http.routers.mealie.entrypoints=websecure
+            - traefik.http.routers.mealie.tls=true
+            - traefik.http.routers.mealie.tls.certresolver=myresolver
+        volumes:
+            - ${DATA_DIR}/mealie-data:/app/data/
+        networks:
+            - external
+        restart: unless-stopped
+        deploy:
+            resources:
+                limits:
+                    memory: 1000M
