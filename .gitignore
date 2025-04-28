@@ -1,3 +1,7 @@
+# Sensitive files
 .env
 **/letsencrypt/**
 data/**
+
+# objects files
+*.o
