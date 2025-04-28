@@ -12,6 +12,7 @@ services:
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "metrics.prometheus=true"
     environment:
       - TZ=Europe/Brussels
     ports:
@@ -177,10 +178,37 @@ services:
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     networks:
       - external
+       
   prometheus:
     image: prom/prometheus
     container_name: prometheus
-             
+    restart: unless-stopped
+    volumes:
+      - "${DATA_DIR}/prometheus/:/etc/prometheus"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.size=256MB'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)"
+      - "traefik.http.routers.prometheus.service=prometheus"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    networks:
+      - external
+      - internal
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
 volumes:
   data:
   vw-data:
