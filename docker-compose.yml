@@ -4,7 +4,7 @@ services:
     container_name: "traefik"
     command:
       # - "--log.level=DEBUG"
-      - "--api.insecure=false"
+      - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -71,6 +71,9 @@ services:
       - ${DATA_DIR}/pgdata:/var/lib/postgresql/data
     labels:
       - "traefik.enable=false"
+    networks:
+      - external
+      - internal
 
   vaultwarden:
     image: vaultwarden/server:latest
@@ -217,5 +220,5 @@ volumes:
 
 networks:
   external:
-    external: true
+   # external: true
   internal:
