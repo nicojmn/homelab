@@ -84,7 +84,7 @@ services:
     environment:
     #- DATABASE_URL=${VAULT_DB}
     - SIGNUPS_ALLOWED=false
-    - DOMAIN=https://vault.nicojmn.tech
+    - DOMAIN=https://vault.${DOMAIN}
     - ADMIN_TOKEN=${VW_TOKEN}
     - TZ=Europe/Brussels
     - LOG_FILE=/data/logs.log
