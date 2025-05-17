@@ -137,10 +137,10 @@ services:
       TZ: Europe/Brussels
       MAX_WORKERS: 1
       WEB_CONCURRENCY: 1
-      BASE_URL: https://mealie.${DOMAIN}
+      BASE_URL: https://recipes.${DOMAIN}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mealie.rule=Host(`mealie.${DOMAIN}`)"
+      - "traefik.http.routers.mealie.rule=Host(`recipes.${DOMAIN}`)"
       - "traefik.http.routers.mealie.entrypoints=websecure"
       - "traefik.http.routers.mealie.tls=true"
       - "traefik.http.routers.mealie.tls.certresolver=myresolver"
