@@ -1,0 +1,40 @@
+services:
+    ferdium:
+        image: ferdium/ferdium-server:latest
+        container_name: ferdium
+        environment:
+            - NODE_ENV=production
+            - APP_URL="https://ferdium.${DOMAIN}"
+            - DB_CONNECTION=sqlite
+            - DB_HOST=127.0.0.1
+            - DB_PORT=3306
+            - DB_USER=${FERDIUM_DB_USER}
+            - DB_PASSWORD=${FERDIUM_DB_AUTH}
+            - DB_DATABASE=ferdium
+            - DB_SSL=false
+            - MAIL_CONNECTION=smtp
+            - SMTP_HOST=${SMTP_HOST}
+            - SMTP_PORT=${SMTP_PORT}
+            - MAIL_SSL=false
+            - MAIL_USERNAME=${SMTP_EMAIL}
+            - MAIL_PASSWORD=${FERDIUM_SMTP_PSWD}
+            - MAIL_SENDER=${SMTP_EMAIL}
+            - IS_CREATION_ENABLED=true
+            - IS_DASHBOARD_ENABLED=true
+            - IS_REGISTRATION_ENABLED=false
+            - CONNECT_WITH_FRANZ=false
+            - DATA_DIR=/data
+            - JWT_USE_PEM=true
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.ferdium.rule=Host(`ferdium.${DOMAIN}`)
+            - traefik.http.routers.ferdium.entrypoints=websecure
+            - traefik.http.routers.ferdium.tls=true
+            - traefik.http.routers.ferdium.tls.certresolver=myresolver
+            - traefik.http.services.ferdium.loadbalancer.server.port=3333
+        volumes:
+            - ${DATA_DIR}/ferdium/db:/data
+            - ${DATA_DIR}/ferdium/recipes:/app/build/recipes
+        networks:
+            - external
+        restart: unless-stopped

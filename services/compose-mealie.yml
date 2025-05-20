@@ -4,7 +4,7 @@ services:
         container_name: mealie
         environment:
             ALLOW_SIGNUP: "false"
-            BASE_URL: https://mealie.${DOMAIN}
+            BASE_URL: https://recipes.${DOMAIN}
             MAX_WORKERS: 1
             PGID: 1000
             PUID: 1000
@@ -14,7 +14,7 @@ services:
             - 9925:9000
         labels:
             - traefik.enable=true
-            - traefik.http.routers.mealie.rule=Host(`mealie.${DOMAIN}`)
+            - traefik.http.routers.mealie.rule=Host(`recipes.${DOMAIN}`)
             - traefik.http.routers.mealie.entrypoints=websecure
             - traefik.http.routers.mealie.tls=true
             - traefik.http.routers.mealie.tls.certresolver=myresolver
