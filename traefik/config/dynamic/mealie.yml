@@ -1,0 +1,17 @@
+http:
+  routers:
+    mealie:
+      rule: "Host(`recipes.nicojmn.be`)"
+      entryPoints:
+        - "websecure"
+      service: "mealie"
+      tls:
+        certResolver: "myresolver"
+      # middlewares:
+        # - sablier1h@file
+
+  services:
+    mealie:
+      loadBalancer:
+        servers:
+          - url: "http://mealie:9000"

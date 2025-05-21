@@ -1,0 +1,14 @@
+http:
+  middlewares:
+    sablier1h:
+      plugin:
+        sablier:
+          names: mealie
+          group: "default"
+          dynamic:
+            displayName: "Mealie Access"
+            refreshFrequency: "5s"
+            showDetails: true
+            theme: "ghost"
+          sablierUrl: "http://sablier:10000"
+          sessionDuration: "1h"
