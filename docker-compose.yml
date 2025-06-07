@@ -96,6 +96,7 @@ services:
     - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
     - "traefik.http.routers.vaultwarden.tls=true"
     - "traefik.http.routers.vaultwarden.tls.certresolver=myresolver"
+    - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - external
       
@@ -264,9 +265,18 @@ services:
       - "traefik.http.routers.cheatsheet.tls=true"
       - "traefik.http.routers.cheatsheet.tls.certresolver=myresolver"
       - "traefik.http.services.cheatsheet.loadbalancer.server.port=80"
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - external
-   
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    command: --interval 900 --label-enable --cleanup
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 volumes:
   data:
   vw-data:
