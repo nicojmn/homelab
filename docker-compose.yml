@@ -96,6 +96,9 @@ services:
     - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
     - "traefik.http.routers.vaultwarden.tls=true"
     - "traefik.http.routers.vaultwarden.tls.certresolver=myresolver"
+    - "traefik.http.middlewares.vaultwarden.headers.stsseconds=31536000"
+    - "traefik.http.middlewares.vaultwarden.headers.stsincludesubdomains=true"
+    - "traefik.http.middlewares.vaultwarden.headers.stspreload=true"
     - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - external
