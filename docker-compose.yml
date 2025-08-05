@@ -280,6 +280,36 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+
+  syncthing:
+    image: syncthing/syncthing
+    container_name: syncthing
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ${DATA_DIR}/st-sync:/var/syncthing
+      - /home/nicolas/.config/helix:/var/syncthing/helix:rw
+      - /tmp/test:/mnt/test-user
+    ports:
+      - 8384:8384 # Web UI
+      - 22000:22000/tcp # TCP file transfers
+      - 22000:22000/udp # QUIC file transfers
+      - 21027:21027/udp # Receive local discovery broadcasts
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sync.rule=Host(`sync.${DOMAIN}`)"
+      - "traefik.http.routers.sync.entrypoints=websecure"
+      - "traefik.http.routers.sync.tls=true"
+      - "traefik.http.routers.sync.tls.certresolver=myresolver"
+      - "traefik.http.services.sync.loadbalancer.server.port=22000"
+    healthcheck:
+      test: curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -o --color=never OK || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+
 volumes:
   data:
   vw-data:
