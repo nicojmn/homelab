@@ -310,7 +310,7 @@ services:
       timeout: 10s
       retries: 3
 
-    actual_server:
+  actual_server:
     image: docker.io/actualbudget/actual-server:latest
     container_name: actual
     volumes:
