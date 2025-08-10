@@ -342,7 +342,9 @@ services:
       - DOMAIN=${DOMAIN}
       - TIME_INTERVAL=${TIME_INTERVAL}
     restart: unless-stopped
-    
+    networks:
+      - internal6
+
 volumes:
   data:
   vw-data:
@@ -353,3 +355,6 @@ networks:
   external:
    # external: true
   internal:
+  internal6:
+    driver: bridge
+    enable_ipv6: true
