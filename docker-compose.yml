@@ -331,6 +331,18 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  renew-ip:
+    image: nicojmn/govh-renew-ip:latest
+    container_name: renew-ip
+    environment:
+      - OVH_ENDPOINT=${OVH_ENDPOINT}
+      - OVH_APP_KEY=${OVH_APP_KEY}
+      - OVH_APP_SECRET=${OVH_APP_SECRET}
+      - OVH_CONSUMER_KEY=${OVH_CONSUMER_KEY}
+      - DOMAIN=${DOMAIN}
+      - TIME_INTERVAL=${TIME_INTERVAL}
+    restart: unless-stopped
+    
 volumes:
   data:
   vw-data:
