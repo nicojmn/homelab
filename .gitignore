@@ -1,5 +1,6 @@
 # Sensitive files
 .env
+.ovh
 **/letsencrypt/**
 data/**
 
