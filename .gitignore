@@ -3,6 +3,9 @@
 .ovh
 **/letsencrypt/**
 data/**
+!data/glance
+!data/glance/config
+!data/glance/config/glance.yml
 
 # objects files
 *.o

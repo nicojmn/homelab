@@ -1,0 +1,127 @@
+auth:
+  secret-key: ${GLANCE_SECRET}
+  users:
+    nico:
+      password-hash: ${GLANCE_NICO_PSWD}
+
+
+pages:
+  - name: Home
+    # Optionally, if you only have a single page you can hide the desktop navigation for a cleaner look
+    # hide-desktop-navigation: true
+    columns:
+      - size: small
+        widgets:
+          - type: calendar
+            first-day-of-week: monday
+
+          - type: rss
+            limit: 10
+            collapse-after: 3
+            cache: 12h
+            feeds:
+              - url: https://selfh.st/rss/
+                title: selfh.st
+                limit: 4
+
+
+      - size: full
+        widgets:
+          - type: group
+            widgets:
+              - type: hacker-news
+              - type: lobsters
+
+          - type: videos
+            title: "Tech vids"
+            limit: 100
+            channels:
+              - UCR-DXc1voovS8nhAvccRZhg # Jeff Geerling
+              - UCsBjURrPoezykLs9EqgamOA # Fireship
+              - UCBJycsmduvYEL83R_U4JriQ # Marques Brownlee
+              - UCHnyfMqiRRG1u-2MsSQLbXA # Veritasium
+              - UC9-y-6csu5WGm29I7JiwpnA # Computerphile
+              - UCaNlbnghtwlsGF-KzAFThqA # Science etonnante
+              - UCYO_jab_esuFRV4b17AJtAw # 3blue1brown
+              - UCgkhWgBGRp0sdFy2MHDWfSg # El jj
+              - UCS0N5baNlQWJCUrhCEo8WlA # Ben eater
+              
+
+          - type: videos
+            title: "Boom boom vids"
+            channels:
+              - UCsq3H3cTxvDU1Mktk1DQVkA # Dr peacock
+              - UCAEwCfBRlB3jIY9whEfSP5Q # Q-Dance
+              - UCnDEGM2zKFYB3v-Wlpkvhgg # Rebirth
+              - UCGgQpBr1shI3IL4pVZ9Cplg # Bass events
+              - UC6oQdd8QclFIpaM0reAgotQ # AR gang
+
+          - type: videos
+            title: "Random vids"
+            channels:
+              - UC__xRB5L4toU9yYawt_lIKg # Blast
+              - UCdnaDhU-LDQrIEEmSIfq0-Q # Mediapart
+              - UCtbPu7ZHD5mWBtej5Tx4xWw # Alter eco
+              - UCWeg2Pkate69NFdBeuRFTAw # Squeezie
+              - UCxtZJ9rRnQBktlAI7DyQpJg # Eloy
+              
+          - type: group
+            widgets:
+              - type: reddit
+                subreddit: technology
+                show-thumbnails: true
+              - type: reddit
+                subreddit: selfhosted
+                show-thumbnails: true
+
+      - size: small
+        widgets:
+          - type: weather
+            location: Louvain-la-Neuve, Belgium
+            units: metric
+            hour-format: 24h 
+            # Optionally hide the location from being displayed in the widget
+            # hide-location: true
+
+
+          - type: server-stats
+            servers:
+              - type: local
+                name: Services
+
+          - type: releases
+            cache: 1d
+            # Without authentication the Github API allows for up to 60 requests per hour. You can create a
+            # read-only token from your Github account settings and use it here to increase the limit.
+            # token: ...
+            repositories:
+              - glanceapp/glance
+              - syncthing/syncthing
+              - traefik/traefik
+              - dani-garcia/vaultwarden
+              - fail2ban/fail2ban
+              
+
+  - name: Status
+    columns:
+      - size: full
+        widgets:
+          - type: docker-containers
+            hide-by-default: false
+        
+                  
+
+  # Add more pages here:
+  # - name: Your page name
+  #   columns:
+  #     - size: small
+  #       widgets:
+  #         # Add widgets here
+
+  #     - size: full
+  #       widgets:
+  #         # Add widgets here
+
+  #     - size: small
+  #       widgets:
+  #         # Add widgets here

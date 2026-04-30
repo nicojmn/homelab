@@ -113,6 +113,10 @@ services:
     image: glanceapp/glance
     container_name: glance
     restart: unless-stopped
+    environment:
+      - GLANCE_SECRET=${GLANCE_SECRET}
+      - GLANCE_NICO_PSWD=${GLANCE_NICO_PSWD}
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${DATA_DIR}/glance/config:/app/config
