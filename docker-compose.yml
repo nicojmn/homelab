@@ -246,6 +246,62 @@ services:
     networks:
       - internal6
 
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:15
+    container_name: forgejo
+    depends_on:
+      - forgejo_db
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=forgejo_db:5432
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      - FORGEJO__database__PASSWD=${FORGEJO_DB_PSWD}
+    restart: unless-stopped
+    networks:
+      - external
+    volumes:
+      - ${DATA_DIR}/forgejo:/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - '3000:3000'
+      - '222:22'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forgejo.rule=Host(`git.${DOMAIN}`)"
+      - "traefik.http.routers.forgejo.entrypoints=websecure"
+      - "traefik.http.routers.forgejo.tls=true"
+      - "traefik.http.routers.forgejo.tls.certresolver=myresolver"
+      - "traefik.http.services.forgejo.loadbalancer.server.port=3000"
+
+  forgejo_db:
+    image: postgres:14
+    container_name: forgejo_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=forgejo
+      - POSTGRES_PASSWORD=${FORGEJO_DB_PSWD}
+      - POSTGRES_DB=forgejo
+    networks:
+      - external
+    volumes:
+      - ${DATA_DIR}/forgejo-db:/var/lib/postgresql/data  
+      
+  forgejo-runner:
+    image: data.forgejo.org/forgejo/runner:12
+    container_name: forgejo-runner
+    user: root
+    command: forgejo-runner daemon --config /data/runner-config.yaml
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ${DATA_DIR}/forgejo-runner:/data
+      - ${DATA_DIR}/forgejo-runner/config.yaml:/data/config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
 volumes:
   data:
   vw-data:
