@@ -141,7 +141,7 @@ services:
       - ${DATA_DIR}/grafana/conf:/etc/grafana
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.rule=Host(`monitoring.${DOMAIN}`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls=true"
       - "traefik.http.routers.grafana.tls.certresolver=myresolver"
@@ -195,7 +195,7 @@ services:
       - external
 
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower
     container_name: watchtower
     command: --interval 900 --label-enable --cleanup
     volumes:
