@@ -388,7 +388,56 @@ services:
     restart: unless-stopped
     networks:
       - external
+  lyftr-backend:
+    image: cwlumm/lyftr-backend:latest
+    container_name: lyftr-backend
+    build: ${DATA_DIR}/lyftr/backend
+    restart: unless-stopped
+    volumes:
+      - ${DATA_DIR}/lyftr/data:/app/data
+    environment:
+      - ENV=production
+      - PORT=3000
+      - JWT_SECRET=${LYFTR_JWT_SECRET}
+      - CORS_ORIGIN=https://lyftr.${DOMAIN}
+      - DB_TYPE=sqlite
+      - DB_PATH=/app/data/lyftr.db
+      - DISABLE_SIGNUP=true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - external
 
+  lyftr-frontend:
+    image: cwlumm/lyftr-frontend:latest
+    container_name: lyftr-frontend
+    build: ${DATA_DIR}/lyftr/web
+    restart: unless-stopped
+    depends_on:
+      lyftr-backend:
+        condition: service_healthy
+    environment:
+      - BACKEND_ORIGIN=lyftr-backend:3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lyftr.rule=Host(`lyftr.${DOMAIN}`)"
+      - "traefik.http.routers.lyftr.entrypoints=websecure"
+      - "traefik.http.routers.lyftr.tls.certresolver=myresolver"
+      - "traefik.http.services.lyftr.loadbalancer.server.port=80"
+      # Block signup endpoint
+      - "traefik.http.routers.lyftr-signup.rule=Host(`lyftr.${DOMAIN}`) && Path(`/api/v1/auth/register`)"
+      - "traefik.http.routers.lyftr-signup.entrypoints=websecure"
+      - "traefik.http.routers.lyftr-signup.tls=true"
+      - "traefik.http.routers.lyftr-signup.tls.certresolver=myresolver"
+      - "traefik.http.routers.lyftr-signup.priority=100"
+      - "traefik.http.routers.lyftr-signup.middlewares=deny-all"
+      - "traefik.http.middlewares.deny-all.ipallowlist.sourcerange=127.0.0.1/32"
+    networks:
+      - external
+  
 volumes:
   data:
   vw-data:
