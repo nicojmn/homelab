@@ -5,15 +5,26 @@ services:
     restart: always
     command:
       # - "--log.level=DEBUG"
-      - "--api.insecure=true"
+      - "--api.insecure=false"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.websecure.address=:443"
+      - "--entryPoints.websecure.http.middlewares=crowdsec@file"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--metrics.prometheus=true"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
+      - "--accesslog.bufferingsize=0"
+      - "--accesslog.fields.headers.defaultmode=drop"
+      - "--accesslog.fields.headers.names.User-Agent=keep"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--experimental.plugins.crowdsec-bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      - "--experimental.plugins.crowdsec-bouncer.version=v1.4.4"
     environment:
       - TZ=Europe/Brussels
     ports:
@@ -22,6 +33,8 @@ services:
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - "${DATA_DIR}/traefik/logs:/var/log/traefik"
+      - "${DATA_DIR}/traefik/dynamic:/etc/traefik/dynamic:ro"
     labels:
       - "traefik.enable=true"
       - "traefik.http.middlewares.auth.basicauth.users=${TFK_USER}"
@@ -33,6 +46,29 @@ services:
       - "traefik.http.routers.api.middlewares=auth" # Apply basic auth middleware
     networks:
       - external
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.6.4
+    container_name: crowdsec
+    depends_on:
+      - traefik
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Brussels
+      - GID=1000
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/base-http-scenarios
+      - BOUNCER_KEY_traefik=${CROWDSEC_BOUNCER_KEY}
+    volumes:
+      - ${DATA_DIR}/crowdsec/config:/etc/crowdsec
+      - ${DATA_DIR}/crowdsec/data:/var/lib/crowdsec/data
+      - ${DATA_DIR}/traefik/logs:/var/log/traefik:ro
+    networks:
+      - external
+    healthcheck:
+      test: ["CMD", "cscli", "lapi", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   vaultwarden:
     image: vaultwarden/server:latest
@@ -437,6 +473,20 @@ services:
       - "traefik.http.middlewares.deny-all.ipallowlist.sourcerange=127.0.0.1/32"
     networks:
       - external
+
+  robots:
+    image: nginx:alpine
+    volumes:
+      - ${DATA_DIR}/robots/robots.txt:/usr/share/nginx/html/robots.txt:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.robots.rule=Host(`${DOMAIN}`) && Path(`/robots.txt`)
+      - "traefik.http.routers.robots.entrypoints=websecure"
+      - "traefik.http.routers.robots.tls.certresolver=myresolver"
+      - "traefik.http.services.robots.loadbalancer.server.port=80"
+    networks:
+      - external
+
   
 volumes:
   data:
