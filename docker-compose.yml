@@ -5,26 +5,26 @@ services:
     restart: always
     command:
       # - "--log.level=DEBUG"
-      - "--api.insecure=false"
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entryPoints.websecure.address=:443"
-      - "--entryPoints.websecure.http.middlewares=crowdsec@file"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--metrics.prometheus=true"
       - "--accesslog=true"
       - "--accesslog.filepath=/var/log/traefik/access.log"
       - "--accesslog.format=json"
       - "--accesslog.bufferingsize=0"
       - "--accesslog.fields.headers.defaultmode=drop"
       - "--accesslog.fields.headers.names.User-Agent=keep"
-      - "--providers.file.directory=/etc/traefik/dynamic"
-      - "--providers.file.watch=true"
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--entryPoints.websecure.address=:443"
+      - "--entryPoints.websecure.http.middlewares=crowdsec@file"
       - "--experimental.plugins.crowdsec-bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
       - "--experimental.plugins.crowdsec-bouncer.version=v1.4.4"
+      - "--metrics.prometheus=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
     environment:
       - TZ=Europe/Brussels
     ports:
@@ -45,7 +45,7 @@ services:
       - "traefik.http.routers.api.tls.certresolver=myresolver" # Link to the ACME resolver
       - "traefik.http.routers.api.middlewares=auth" # Apply basic auth middleware
     networks:
-      - external
+      - web
 
   crowdsec:
     image: crowdsecurity/crowdsec:v1.6.4
@@ -63,7 +63,7 @@ services:
       - ${DATA_DIR}/crowdsec/data:/var/lib/crowdsec/data
       - ${DATA_DIR}/traefik/logs:/var/log/traefik:ro
     networks:
-      - external
+      - web
     healthcheck:
       test: ["CMD", "cscli", "lapi", "status"]
       interval: 30s
@@ -95,7 +95,7 @@ services:
     - "traefik.http.middlewares.vaultwarden.headers.stspreload=true"
     - "com.centurylinklabs.watchtower.enable=true"
     networks:
-      - external
+      - web
       
   fail2ban:
     image: lscr.io/linuxserver/fail2ban:latest
@@ -119,8 +119,6 @@ services:
     image: ghcr.io/mealie-recipes/mealie:v1.12.0 # 
     container_name: mealie
     restart: unless-stopped
-    ports:
-        - "9925:9000" # 
     deploy:
       resources:
         limits:
@@ -137,13 +135,14 @@ services:
       WEB_CONCURRENCY: 1
       BASE_URL: https://recipes.${DOMAIN}
     labels:
-      - "traefik.enable=true"
+      # - "traefik.enable=true" temp removed from web access
       - "traefik.http.routers.mealie.rule=Host(`recipes.${DOMAIN}`)"
       - "traefik.http.routers.mealie.entrypoints=websecure"
       - "traefik.http.routers.mealie.tls=true"
       - "traefik.http.routers.mealie.tls.certresolver=myresolver"
+      - "traefik.http.services.mealie.loadbalancer.server.port=9000"
     networks:
-      - external
+      - web
 
   glance:
     image: glanceapp/glance
@@ -165,7 +164,7 @@ services:
       - "traefik.http.routers.glance.tls.certresolver=myresolver"
       - "traefik.http.services.glance.loadbalancer.server.port=8080"
     networks:
-      - external
+      - web
 
   grafana:
     image: grafana/grafana:latest
@@ -183,7 +182,8 @@ services:
       - "traefik.http.routers.grafana.tls.certresolver=myresolver"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     networks:
-      - external
+      - web
+      - metrics
        
   prometheus:
     image: prom/prometheus
@@ -195,14 +195,8 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.size=256MB'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)"
-      - "traefik.http.routers.prometheus.service=prometheus"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     networks:
-      - external
-      - internal
+      - metrics
 
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
@@ -228,7 +222,7 @@ services:
       - "traefik.http.services.cheatsheet.loadbalancer.server.port=80"
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
-      - external
+      - web
 
   watchtower:
     image: nickfedor/watchtower
@@ -261,7 +255,9 @@ services:
       - "traefik.http.routers.sync.entrypoints=websecure"
       - "traefik.http.routers.sync.tls=true"
       - "traefik.http.routers.sync.tls.certresolver=myresolver"
-      - "traefik.http.services.sync.loadbalancer.server.port=22000"
+      - "traefik.http.services.sync.loadbalancer.server.port=8384"
+    networks:
+      - web
     healthcheck:
       test: curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -o --color=never OK || exit 1
       interval: 1m
@@ -297,15 +293,16 @@ services:
       - FORGEJO__database__PASSWD=${FORGEJO_DB_PSWD}
     restart: unless-stopped
     networks:
-      - external
+      - web
+      - forge
     volumes:
       - ${DATA_DIR}/forgejo:/data
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - '3000:3000'
       - '222:22'
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=web"
       - "traefik.http.routers.forgejo.rule=Host(`git.${DOMAIN}`)"
       - "traefik.http.routers.forgejo.entrypoints=websecure"
       - "traefik.http.routers.forgejo.tls=true"
@@ -321,7 +318,7 @@ services:
       - POSTGRES_PASSWORD=${FORGEJO_DB_PSWD}
       - POSTGRES_DB=forgejo
     networks:
-      - external
+      - forge
     volumes:
       - ${DATA_DIR}/forgejo-db:/var/lib/postgresql/data  
       
@@ -337,6 +334,8 @@ services:
       - ${DATA_DIR}/forgejo-runner/config.yaml:/data/config.yaml
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
+    networks:
+      - forge
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -348,11 +347,10 @@ services:
     volumes:
       - ${DATA_DIR}/jellyfin/config/jellyfin:/config
       - ${DATA_DIR}/jellyfin/media:/data # The master folder
-    ports:
-      - 8096:8096
     restart: unless-stopped
     networks:
-      - external
+      - web
+      - media
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
@@ -375,7 +373,7 @@ services:
       - 8989:8989
     restart: unless-stopped
     networks:
-      - external
+      - media
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
@@ -390,7 +388,7 @@ services:
       - 7878:7878
     restart: unless-stopped
     networks:
-      - external
+      - media
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -409,7 +407,7 @@ services:
       - 6881:6881/udp # Torrent port
     restart: unless-stopped
     networks:
-      - external
+      - media
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
@@ -423,7 +421,7 @@ services:
       - 9696:9696
     restart: unless-stopped
     networks:
-      - external
+      - media
   lyftr-backend:
     image: cwlumm/lyftr-backend:latest
     container_name: lyftr-backend
@@ -445,7 +443,7 @@ services:
       timeout: 10s
       retries: 3
     networks:
-      - external
+      - lyftr
 
   lyftr-frontend:
     image: cwlumm/lyftr-frontend:latest
@@ -472,7 +470,8 @@ services:
       - "traefik.http.routers.lyftr-signup.middlewares=deny-all"
       - "traefik.http.middlewares.deny-all.ipallowlist.sourcerange=127.0.0.1/32"
     networks:
-      - external
+      - web
+      - lyftr
 
   robots:
     image: nginx:alpine
@@ -485,8 +484,7 @@ services:
       - "traefik.http.routers.robots.tls.certresolver=myresolver"
       - "traefik.http.services.robots.loadbalancer.server.port=80"
     networks:
-      - external
-
+      - web
   
 volumes:
   data:
@@ -495,9 +493,13 @@ volumes:
   mealie-data:
 
 networks:
-  external:
-   # external: true
-  internal:
+  web:
+    external: true
+    name: web
+  media:
+  forge:
+  lyftr:
+  metrics:
   internal6:
     driver: bridge
     enable_ipv6: true
